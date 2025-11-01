@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
-DATABASE_URL = "postgresql://banco_dizai_user:qhQ2gyuq9S1rVnwNcpCH6YgPawmB5nR7@dpg-d42osver433s73drgib0-a/banco_dizai"
+DATABASE_URL = "postgresql+psycopg://banco_dizai_user:qhQ2gyuq9S1rVnwNcpCH6YgPawmB5nR7@dpg-d42osver433s73drgib0-a/banco_dizai"
 
 engine = create_engine(DATABASE_URL)
 Base = declarative_base()
