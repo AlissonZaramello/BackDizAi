@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from create_tables import Base
 
 app = FastAPI()
 
@@ -10,3 +11,4 @@ def root():
 def create_tables():
     Base.metadata.create_all(engine)
     return {"status": "Tabelas criadas com sucesso"}
+
