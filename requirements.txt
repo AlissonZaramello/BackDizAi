@@ -2,6 +2,7 @@ fastapi==0.115.0
 uvicorn==0.32.0
 gunicorn==23.0.0
 SQLAlchemy==2.0.32
-psycopg2-binary==3.2.0
+psycopg[binary]==3.2.0
+
 
 
