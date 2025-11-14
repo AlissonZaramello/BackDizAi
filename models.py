@@ -1,12 +1,8 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, TIMESTAMP, Boolean, CHAR
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, TIMESTAMP, Boolean, CHAR, Float
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from database import Base
+
 from datetime import datetime
-
-DATABASE_URL = "postgresql+psycopg://banco_dizai_user:qhQ2gyuq9S1rVnwNcpCH6YgPawmB5nR7@dpg-d42osver433s73drgib0-a/banco_dizai"
-
-engine = create_engine(DATABASE_URL)
-Base = declarative_base()
 
 class Usuario(Base):
     __tablename__ = 'usuarios'
@@ -37,7 +33,8 @@ class Feedback(Base):
     titulo = Column(String(100), nullable=False)
     conteudo = Column(Text, nullable=False)
     status = Column(String(50), default="Aberto") #aberto, em andamento, resolvido
-    sentimento = Column(String(50)) #positivo, negativo, neutro
+    nota_sentimento = Column(Integer)
+    conf_sentimento = Column(Float)
     criado_em = Column(TIMESTAMP, default=datetime.utcnow)
 
 class Resposta(Base):
@@ -58,5 +55,4 @@ class BlockChain(Base):
     rede_blockchain = Column(String(50), nullable=False)
     criado_em = Column(TIMESTAMP, default=datetime.utcnow)
 
-# Cria todas as tabelas no banco
-Base.metadata.create_all(engine)
+
