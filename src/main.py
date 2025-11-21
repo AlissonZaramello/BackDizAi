@@ -113,10 +113,18 @@ def delete_empresa(empresa_id: int, db: Session = Depends(get_db)):
 @app.post("/feedbacks")
 def create_feedback(feedback: FeedbackCreate, db: Session = Depends(get_db), response_model=FeedbackRead):
 
+    usuario = db.query(Usuario).filter(Usuario.id == feedback.usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario não encontrado")
+
+    empresa = db.query(Empresa).filter(Empresa.id == feedback.empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
     text= f"{feedback.titulo}, {feedback.conteudo}"
     score, confidence = 0, 0
     #score, confidence = feedback_analysis(text)
-    
+
     db_feedback = Feedback(
         usuario_id=feedback.usuario_id,
         empresa_id=feedback.empresa_id,
@@ -144,15 +152,25 @@ def list_feedbacks(db: Session = Depends(get_db)):
 
 @app.put("/feedbacks/{feedback_id}", response_model=FeedbackRead)
 def update_feedback(feedback_id: int, feedback: FeedbackCreate, db: Session = Depends(get_db)):
+
     db_feedback = db.query(Feedback).get(feedback_id)
     if not db_feedback:
         raise HTTPException(404, detail= "Feedback não encontrado")
+    
+    usuario = db.query(Usuario).filter(Usuario.id == feedback.usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario não encontrado")
+
+    empresa = db.query(Empresa).filter(Empresa.id == feedback.empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+
     for key, value in feedback.dict().items():
         setattr(db_feedback, key, value)
 
     text = f"{db_feedback.titulo}, {db_feedback.conteudo}"
-    #db_feedback.nota_sentimento, db_feedback.conf_sentimento = analyze_sentiment(text)
     db_feedback.nota_sentimento, db_feedback.conf_sentimento = 0,0
+    #db_feedback.nota_sentimento, db_feedback.conf_sentimento = analyze_sentiment(text)
     db.commit()
     db.refresh(db_feedback)
     return db_feedback
@@ -169,6 +187,15 @@ def delete_feedback(feedback_id: int, db: Session = Depends(get_db)):
 ## RESPOSTAS
 @app.post("/respostas", response_model=RespostaRead)
 def create_resposta(resposta: RespostaCreate, db: Session = Depends(get_db)):
+
+    empresa = db.query(Empresa).filter(Empresa.id == resposta.empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+
+    feedback = db.query(Feedback).filter(Feedback.id == resposta.feedback_id).first()
+    if not feedback:
+        raise HTTPException(status_code=404, detail= "Feedback não encontrado")
+
     db_resposta = Resposta(**resposta.dict())
     db.add(db_resposta)
     db.commit()
@@ -191,6 +218,15 @@ def update_resposta(resposta_id: int, resposta: RespostaCreate, db: Session = De
     db_resposta = db.query(Resposta).get(resposta_id)
     if not db_resposta:
         raise HTTPException(404, detail="Resposta não encontrada")
+
+    empresa = db.query(Empresa).filter(Empresa.id == resposta.empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+
+    feedback = db.query(Feedback).filter(Feedback.id == resposta.feedback_id).first()
+    if not feedback:
+        raise HTTPException(status_code=404, detail= "Feedback não encontrado")
+    
     for key, value in resposta.dict().items():
         setattr(db_resposta, key, value)
     db.commit()
@@ -209,6 +245,11 @@ def delete_resposta(resposta_id: int, db: Session = Depends(get_db)):
 ## BLOCKCHAINS
 @app.post("/blockchains", response_model=BlockChainRead)
 def create_blockchain(bc: BlockChainCreate, db: Session = Depends(get_db)):
+
+    feedback = db.query(Feedback).filter(Feedback.id == bc.feedback_id).first()
+    if not feedback:
+        raise HTTPException(status_code=404, detail= "Feedback não encontrado")
+
     db_bc = BlockChain(**bc.dict())
     db.add(db_bc)
     db.commit()
@@ -231,6 +272,11 @@ def update_blockchain(blockchain_id: int, blockchain: BlockChainCreate, db: Sess
     db_block = db.query(BlockChain).get(blockchain_id)
     if not db_block:
         raise HTTPException(404, detail="BlockChain não encontrada")
+
+    feedback = db.query(Feedback).filter(Feedback.id == bc.feedback_id).first()
+    if not feedback:
+        raise HTTPException(status_code=404, detail= "Feedback não encontrado")
+    
     for key, value in blockchain.dict().items():
         setattr(db_block, key, value)
     db.commit()
