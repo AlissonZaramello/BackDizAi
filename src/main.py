@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from fastapi import FastAPI, Depends, HTTPException
 from database import SessionLocal, engine, Base
 from sqlalchemy.orm import Session
-#from analysis import feedback_analysis
+from analysis import feedback_analysis
 from typing import List
 from models import  Usuario, Empresa, Feedback, Resposta, BlockChain
 from schemas import (
@@ -122,8 +122,7 @@ def create_feedback(feedback: FeedbackCreate, db: Session = Depends(get_db), res
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
     
     text= f"{feedback.titulo}, {feedback.conteudo}"
-    score, confidence = 0, 0
-    #score, confidence = feedback_analysis(text)
+    score, confidence = feedback_analysis(text)
 
     db_feedback = Feedback(
         usuario_id=feedback.usuario_id,
@@ -169,8 +168,7 @@ def update_feedback(feedback_id: int, feedback: FeedbackCreate, db: Session = De
         setattr(db_feedback, key, value)
 
     text = f"{db_feedback.titulo}, {db_feedback.conteudo}"
-    db_feedback.nota_sentimento, db_feedback.conf_sentimento = 0,0
-    #db_feedback.nota_sentimento, db_feedback.conf_sentimento = analyze_sentiment(text)
+    db_feedback.nota_sentimento, db_feedback.conf_sentimento = analyze_sentiment(text)
     db.commit()
     db.refresh(db_feedback)
     return db_feedback
