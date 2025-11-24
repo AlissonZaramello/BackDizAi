@@ -11,6 +11,7 @@ class UsuarioRead(BaseModel):
     id: int
     nome: str
     email: str
+    tipo: str
     ativo: bool
 
     class Config:
@@ -27,12 +28,9 @@ class EmpresaCreate(BaseModel):
 
 class EmpresaRead(BaseModel):
     id: int
-    nome: str
-    email: str
     cnpj: str
     setor: Optional[str]
     descricao: Optional[str]
-    ativo: bool
 
     class Config:
         orm_mode = True

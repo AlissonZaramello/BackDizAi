@@ -1,6 +1,6 @@
 import os
 from sqlalchemy import create_engine
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from database import SessionLocal, engine, Base
 from sqlalchemy.orm import Session
@@ -17,7 +17,6 @@ from schemas import (
 
 Base.metadata.create_all(engine)
 app = FastAPI()
-
 origins = [os.getenv("FRONTEND_URL", "http://localhost:3000")]
 
 app.add_middleware(
@@ -42,11 +41,18 @@ def root():
 ## USARIOS
 @app.post("/usuarios", response_model=UsuarioRead)
 def create_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
-    db_usuario = Usuario(nome=usuario.nome, email=usuario.email, senha=usuario.senha)
-    db.add( db_usuario)
+    db_usuario = Usuario(
+        nome=usuario.nome,
+        email=usuario.email,
+        senha=usuario.senha,
+        tipo="usuario",
+        empresa_id=None
+    )
+
+    db.add(db_usuario)
     db.commit()
-    db.refresh( db_usuario)
-    return  db_usuario
+    db.refresh(db_usuario)
+    return db_usuario
 
 @app.get("/usuarios/{usuario_id}", response_model=UsuarioRead)
 def get_usuario(usuario_id: int, db: Session = Depends(get_db)):
@@ -64,9 +70,11 @@ def update_usuario(usuario_id: int, usuario: UsuarioCreate, db: Session = Depend
     db_usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
     if not db_usuario:
         raise HTTPException(status_code=404, detail="Usuario não encontrado")
+
     for key, value in usuario.dict().items():
-        setattr(db_usuario, key, value)
-    
+        if key not in ["tipo", "empresa_id"]:
+            setattr(db_usuario, key, value)
+
     db.commit()
     db.refresh(db_usuario)
     return db_usuario
@@ -80,13 +88,48 @@ def delete_usuario(usuario_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"detail": "Usuário deletado com sucesso"}
     
+## LOGIN
+@app.post("/login", response_model=UsuarioRead)
+def login_usuario(
+    credentials: dict = Body(...),
+    db: Session = Depends(get_db)
+):
+    email = credentials.get("email")
+    senha = credentials.get("senha")
+
+    if not email or not senha:
+        raise HTTPException(status_code=400, detail="Dados inválidos")
+
+    usuario = db.query(Usuario).filter(Usuario.email == email).first()
+
+    if not usuario or usuario.senha != senha:
+        raise HTTPException(status_code=401, detail="Email ou senha incorretos")
+
+    return usuario
+
 ## EMPRESAS
 @app.post("/empresas", response_model=EmpresaRead)
 def create_empresa(empresa: EmpresaCreate, db: Session = Depends(get_db)):
-    db_empresa = Empresa(**empresa.dict())
+    db_empresa = Empresa(
+        cnpj=empresa.cnpj,
+        setor=empresa.setor,
+        descricao=empresa.descricao
+    )
     db.add(db_empresa)
     db.commit()
     db.refresh(db_empresa)
+
+    db_usuario = Usuario(
+        nome=empresa.nome,
+        email=empresa.email,
+        senha=empresa.senha,
+        tipo="empresa",
+        empresa_id=db_empresa.id
+    )
+    db.add(db_usuario)
+    db.commit()
+    db.refresh(db_usuario)
+
     return db_empresa
 
 @app.get("/empresas/{empresa_id}", response_model=EmpresaRead)
@@ -105,9 +148,17 @@ def update_empresa(empresa_id: int, empresa: EmpresaCreate, db: Session = Depend
     db_empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not db_empresa:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
+
     for key, value in empresa.dict().items():
-        setattr(db_empresa, key, value)
-    
+        if key in ["cnpj", "setor", "descricao"]:
+            setattr(db_empresa, key, value)
+
+    usuario = db.query(Usuario).filter(Usuario.empresa_id == empresa_id).first()
+    if usuario:
+        usuario.nome = empresa.nome
+        usuario.email = empresa.email
+        usuario.senha = empresa.senha
+
     db.commit()
     db.refresh(db_empresa)
     return db_empresa
@@ -117,8 +168,14 @@ def delete_empresa(empresa_id: int, db: Session = Depends(get_db)):
     db_empresa = db.query(Empresa).get(empresa_id)
     if not db_empresa:
         raise HTTPException(404, detail="Empresa não encontrada")
+
+    db_usuario = db.query(Usuario).filter(Usuario.empresa_id == empresa_id).first()
+    if db_usuario:
+        db.delete(db_usuario)
+
     db.delete(db_empresa)
     db.commit()
+
     return {"detail": "Empresa deletada com sucesso"}
 
 ## FEEDBACKS
