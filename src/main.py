@@ -6,8 +6,8 @@ from database import SessionLocal, engine, Base
 from sqlalchemy.orm import Session
 from analysis import feedback_analysis
 from typing import List
-from models import  Usuario, Empresa, Feedback, Resposta, BlockChain
-from schemas import (
+from schemas import  Usuario, Empresa, Feedback, Resposta, BlockChain
+from models import (
     UsuarioCreate, UsuarioRead,
     EmpresaCreate, EmpresaRead,
     FeedbackCreate, FeedbackRead,
