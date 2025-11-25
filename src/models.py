@@ -16,7 +16,7 @@ class UsuarioRead(BaseModel):
     ativo: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Empresa
 class EmpresaCreate(BaseModel):
@@ -30,11 +30,13 @@ class EmpresaCreate(BaseModel):
 class EmpresaRead(BaseModel):
     id: int
     cnpj: str
-    setor: Optional[str]
-    descricao: Optional[str]
+    setor: str
+    descricao: str
+    nome: Optional[str] = None
+    email: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Feedback
 class FeedbackCreate(BaseModel):
@@ -56,7 +58,7 @@ class FeedbackRead(BaseModel):
     conf_sentimento: Optional[float]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Resposta
 class RespostaCreate(BaseModel):
@@ -71,7 +73,7 @@ class RespostaRead(BaseModel):
     resposta: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # BlockChain
 class BlockChainCreate(BaseModel):
@@ -90,4 +92,4 @@ class BlockChainRead(BaseModel):
     tx_id_blockchain: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True

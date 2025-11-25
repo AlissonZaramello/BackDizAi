@@ -137,11 +137,36 @@ def get_empresa(empresa_id: int, db: Session = Depends(get_db)):
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
-    return empresa
+
+    usuario = db.query(Usuario).filter(Usuario.empresa_id == empresa_id).first()
+
+    return {
+        "id": empresa.id,
+        "cnpj": empresa.cnpj,
+        "setor": empresa.setor,
+        "descricao": empresa.descricao,
+        "nome": usuario.nome if usuario else None,
+        "email": usuario.email if usuario else None
+    }
 
 @app.get("/empresas", response_model=List[EmpresaRead])
 def list_empresas(db: Session = Depends(get_db)):
-    return db.query(Empresa).all()
+    empresas = db.query(Empresa).all()
+    result = []
+
+    for empresa in empresas:
+        usuario = db.query(Usuario).filter(Usuario.empresa_id == empresa.id).first()
+
+        result.append({
+            "id": empresa.id,
+            "cnpj": empresa.cnpj,
+            "setor": empresa.setor,
+            "descricao": empresa.descricao,
+            "nome": usuario.nome if usuario else None,
+            "email": usuario.email if usuario else None
+        })
+
+    return result
 
 @app.put("/empresas/{empresa_id}", response_model=EmpresaRead)
 def update_empresa(empresa_id: int, empresa: EmpresaCreate, db: Session = Depends(get_db)):
