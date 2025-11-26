@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import SessionLocal, engine, Base
 from sqlalchemy.orm import Session
 from analysis import feedback_analysis
+from security import hash_password, verify_password
 from typing import List
 from schemas import  Usuario, Empresa, Feedback, Resposta, BlockChain
 from models import (
@@ -44,7 +45,7 @@ def create_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
     db_usuario = Usuario(
         nome=usuario.nome,
         email=usuario.email,
-        senha=usuario.senha,
+        senha=hash_password(usuario.senha),
         tipo="usuario",
         empresa_id=None
     )
@@ -73,7 +74,10 @@ def update_usuario(usuario_id: int, usuario: UsuarioCreate, db: Session = Depend
 
     for key, value in usuario.dict().items():
         if key not in ["tipo", "empresa_id"]:
-            setattr(db_usuario, key, value)
+            if key == "senha":
+                setattr(db_usuario, key, hash_password(value))
+            else:
+                setattr(db_usuario, key, value)
 
     db.commit()
     db.refresh(db_usuario)
@@ -102,7 +106,7 @@ def login_usuario(
 
     usuario = db.query(Usuario).filter(Usuario.email == email).first()
 
-    if not usuario or usuario.senha != senha:
+    if not usuario or not verify_password(senha, usuario.senha):
         raise HTTPException(status_code=401, detail="Email ou senha incorretos")
 
     return usuario
@@ -122,7 +126,7 @@ def create_empresa(empresa: EmpresaCreate, db: Session = Depends(get_db)):
     db_usuario = Usuario(
         nome=empresa.nome,
         email=empresa.email,
-        senha=empresa.senha,
+        senha=hash_password(empresa.senha),
         tipo="empresa",
         empresa_id=db_empresa.id
     )
@@ -182,7 +186,7 @@ def update_empresa(empresa_id: int, empresa: EmpresaCreate, db: Session = Depend
     if usuario:
         usuario.nome = empresa.nome
         usuario.email = empresa.email
-        usuario.senha = empresa.senha
+        usuario.senha = hash_password(empresa.senha)
 
     db.commit()
     db.refresh(db_empresa)
