@@ -112,7 +112,7 @@ def login_usuario(
     return usuario
 
 ## EMPRESAS
-@app.post("/empresas", response_model=EmpresaRead)
+@app.post("/empresas", response_model=UsuarioRead)
 def create_empresa(empresa: EmpresaCreate, db: Session = Depends(get_db)):
     db_empresa = Empresa(
         cnpj=empresa.cnpj,
@@ -134,7 +134,7 @@ def create_empresa(empresa: EmpresaCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_usuario)
 
-    return db_empresa
+    return db_usuario
 
 @app.get("/empresas/{empresa_id}", response_model=EmpresaRead)
 def get_empresa(empresa_id: int, db: Session = Depends(get_db)):
@@ -240,12 +240,45 @@ def create_feedback(feedback: FeedbackCreate, db: Session = Depends(get_db), res
 def get_feedback(feedback_id: int, db: Session = Depends(get_db)):
     feedback = db.query(Feedback).filter(Feedback.id == feedback_id).first()
     if not feedback:
-        raise HTTPException(status_code=404, detail= "Feedback não encontrado")
-    return feedback
+        raise HTTPException(status_code=404, detail="Feedback não encontrado")
+
+    usuario = db.query(Usuario).filter(Usuario.empresa_id == feedback.empresa_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+
+    return FeedbackRead(
+        id=feedback.id,
+        usuario_id=feedback.usuario_id,
+        empresa_id=feedback.empresa_id,
+        empresa_nome=usuario.nome,       
+        titulo=feedback.titulo,
+        conteudo=feedback.conteudo,
+        status=feedback.status,
+        nota_sentimento=feedback.nota_sentimento,
+        conf_sentimento=feedback.conf_sentimento
+    )
 
 @app.get("/feedbacks", response_model=List[FeedbackRead])
 def list_feedbacks(db: Session = Depends(get_db)):
-    return db.query(Feedback).all()
+    feedbacks = db.query(Feedback).all()
+    result = []
+
+    for feedback in feedbacks:
+        usuario = db.query(Usuario).filter(Usuario.empresa_id == feedback.empresa_id).first()
+
+        result.append({
+            "id": feedback.id,
+            "usuario_id": feedback.usuario_id,
+            "empresa_id": feedback.empresa_id,
+            "empresa_nome": usuario.nome,       
+            "titulo": feedback.titulo,
+            "conteudo": feedback.conteudo,
+            "status": feedback.status,
+            "nota_sentimento": feedback.nota_sentimento,
+            "conf_sentimento": feedback.conf_sentimento
+        })
+    return result
+
 
 @app.put("/feedbacks/{feedback_id}", response_model=FeedbackRead)
 def update_feedback(feedback_id: int, feedback: FeedbackCreate, db: Session = Depends(get_db)):

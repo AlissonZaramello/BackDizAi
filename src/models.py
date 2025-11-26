@@ -54,6 +54,7 @@ class FeedbackRead(BaseModel):
     titulo: str
     conteudo: str
     status: str
+    empresa_nome: str
     nota_sentimento: Optional[int]
     conf_sentimento: Optional[float]
 

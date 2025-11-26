@@ -5,7 +5,3 @@ SQLAlchemy==2.0.32
 psycopg[binary]==3.2.12
 transformers==4.57.1
 torch==2.9.1
-
-
-
-
