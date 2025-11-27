@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 from analysis import feedback_analysis
 from security import hash_password, verify_password
 from typing import List
-from schemas import  Usuario, Empresa, Feedback, Resposta, BlockChain
-from models import (
+from models import  Usuario, Empresa, Feedback, Resposta, BlockChain
+from schemas import (
     UsuarioCreate, UsuarioRead,
     EmpresaCreate, EmpresaRead,
     FeedbackCreate, FeedbackRead,
@@ -147,8 +147,8 @@ def get_empresa(empresa_id: int, db: Session = Depends(get_db)):
     return {
         "id": empresa.id,
         "cnpj": empresa.cnpj,
-        "setor": empresa.setor,
-        "descricao": empresa.descricao,
+        "setor": empresa.setor or None,
+        "descricao": empresa.descricao or None,
         "nome": usuario.nome if usuario else None,
         "email": usuario.email if usuario else None
     }
@@ -164,8 +164,8 @@ def list_empresas(db: Session = Depends(get_db)):
         result.append({
             "id": empresa.id,
             "cnpj": empresa.cnpj,
-            "setor": empresa.setor,
-            "descricao": empresa.descricao,
+            "setor": empresa.setor if empresa.setor else None,
+            "descricao": empresa.descricao if empresa.descricao else None,
             "nome": usuario.nome if usuario else None,
             "email": usuario.email if usuario else None
         })
@@ -254,6 +254,7 @@ def get_feedback(feedback_id: int, db: Session = Depends(get_db)):
         titulo=feedback.titulo,
         conteudo=feedback.conteudo,
         status=feedback.status,
+        criado_em=feedback.criado_em,
         nota_sentimento=feedback.nota_sentimento,
         conf_sentimento=feedback.conf_sentimento
     )
@@ -274,11 +275,11 @@ def list_feedbacks(db: Session = Depends(get_db)):
             "titulo": feedback.titulo,
             "conteudo": feedback.conteudo,
             "status": feedback.status,
+            "criado_em": feedback.criado_em,
             "nota_sentimento": feedback.nota_sentimento,
             "conf_sentimento": feedback.conf_sentimento
         })
     return result
-
 
 @app.put("/feedbacks/{feedback_id}", response_model=FeedbackRead)
 def update_feedback(feedback_id: int, feedback: FeedbackCreate, db: Session = Depends(get_db)):
@@ -317,9 +318,9 @@ def delete_feedback(feedback_id: int, db: Session = Depends(get_db)):
 @app.post("/respostas", response_model=RespostaRead)
 def create_resposta(resposta: RespostaCreate, db: Session = Depends(get_db)):
 
-    empresa = db.query(Empresa).filter(Empresa.id == resposta.empresa_id).first()
-    if not empresa:
-        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    usuario = db.query(Usuario).filter(Usuario.id == resposta.usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario não encontrado")
 
     feedback = db.query(Feedback).filter(Feedback.id == resposta.feedback_id).first()
     if not feedback:
@@ -348,9 +349,9 @@ def update_resposta(resposta_id: int, resposta: RespostaCreate, db: Session = De
     if not db_resposta:
         raise HTTPException(404, detail="Resposta não encontrada")
 
-    empresa = db.query(Empresa).filter(Empresa.id == resposta.empresa_id).first()
-    if not empresa:
-        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    usuario = db.query(Usuario).filter(Usuario.id == resposta.usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario não encontrada")
 
     feedback = db.query(Feedback).filter(Feedback.id == resposta.feedback_id).first()
     if not feedback:
