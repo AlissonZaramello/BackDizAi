@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from database import SessionLocal, engine, Base
@@ -171,6 +171,19 @@ def list_empresas(db: Session = Depends(get_db)):
         })
 
     return result
+
+@app.get("/empresas/{empresa_id}/avg")
+def get_average_score(empresa_id: int, db: Session = Depends(get_db), min_conf: float = 0.35):
+    feedbacks = db.query(Feedback).filter(
+        Feedback.empresa_id == empresa_id,
+        Feedback.conf_sentimento >= min_conf
+    ).all()
+
+    if not feedbacks:
+        return {"empresa_id": empresa_id, "media_nota": None}
+
+    avg_score = sum(f.nota_sentimento for f in feedbacks if f.nota_sentimento is not None) / len(feedbacks)
+    return {"empresa_id": empresa_id, "media_nota": round(avg_score, 1)}
 
 @app.put("/empresas/{empresa_id}", response_model=EmpresaRead)
 def update_empresa(empresa_id: int, empresa: EmpresaCreate, db: Session = Depends(get_db)):
